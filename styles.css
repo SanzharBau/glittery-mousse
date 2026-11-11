@@ -1,0 +1,2116 @@
+/* ============================================================================
+   styles.css — ОБЩИЕ СТИЛИ ВСЕХ СТРАНИЦ
+   ----------------------------------------------------------------------------
+   Здесь нет ни одного цвета «прибитого гвоздями» — только переменные вида
+   var(--accent). Настоящие цвета подставляет app.js из venue.theme, поэтому
+   у нового заведения весь сайт перекрашивается сам.
+
+   Разделы файла:
+     1. Переменные и база          7. Главная афиша
+     2. Шапка (hero)               8. Промо-баннеры
+     3. Навигация и гамбургер      9. Карта зала
+     4. Боковое меню              10. Меню
+     5. Кнопки и формы            11. Адаптив (телефон и планшет)
+     6. Модальные окна
+   ============================================================================ */
+
+
+/* ============================================================================
+   1. ПЕРЕМЕННЫЕ И БАЗА
+   ============================================================================ */
+
+:root {
+  /* Значения по умолчанию — тема Circus. app.js перезапишет их под заведение.
+     Сайт светлый: белый фон, тёмный текст. Фирменный цвет заведения живёт
+     в карточках, заголовках и кнопках. */
+  --background: #FFFFFF;
+  --surface: #FDF8F3;
+  --border: #EADFD3;
+  --accent: #7A1F27;        /* тёмный фирменный — для светлого фона */
+  --accentLight: #E7C27B;   /* светлый фирменный — для тёмных плашек */
+  --accent2: #9A6417;
+  --onAccent: #FFFFFF;      /* текст на кнопках, залитых accent */
+  --overlay: #2C0A0D;       /* затемнение фотографий — всегда тёмное */
+  --text: #1C1517;
+  --muted: #6F6167;
+  --decor: #B08D57;
+
+  /* Те же цвета в формате «R, G, B» — нужны для полупрозрачности:
+     rgba(var(--overlay-rgb), 0.55). С обычным #hex так сделать нельзя. */
+  --background-rgb: 255, 255, 255;
+  --overlay-rgb: 44, 10, 13;
+  --accent-rgb: 122, 31, 39;
+  --surface-rgb: 253, 248, 243;
+  --text-rgb: 28, 21, 23;
+
+  /* Цвета статусов столов — app.js берёт их из tableStatuses */
+  --st-free: #1D9E75;
+  --st-busy: #C0392B;
+  --st-soon: #E08A2E;
+  --st-reserved: #888780;
+
+  --radius: 12px;
+
+  /* --- Шрифты ---------------------------------------------------------------
+     Засечный только для крупных заголовков, рубленый — для всего остального.
+     Так текст остаётся удобным, а страница выглядит дороже: премиальность
+     даёт контраст двух гарнитур, а не обилие цветов.
+     После названий шрифтов идут запасные — на случай, если Google Fonts
+     не загрузились (нет интернета): вёрстка не поедет, сменится только
+     начертание.
+     -------------------------------------------------------------------------- */
+  --font-head: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* Говорим браузеру, что тема светлая: календарь и часы в форме брони
+     нарисуются под светлый интерфейс. */
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%; /* телефон не увеличивает текст сам по себе */
+}
+
+/* --- Крупные заголовки: засечная гарнитура --------------------------------
+   Размеры заданы через clamp(минимум, гибкая величина, максимум) — шрифт
+   плавно тянется за шириной экрана, и отдельные правила под телефон
+   больше не нужны.
+   -------------------------------------------------------------------------- */
+.hero h1,
+.brand h1,
+.section-head h2,
+.section-title,
+.about-tagline,
+.owner-title,
+.modal h2,
+.venue-body h3,
+.mini-name,
+.rating-score,
+.brandmark,
+.side-title,
+.footer-logo,
+.menu-cta-title {
+  font-family: var(--font-head);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;   /* засечный шрифт крупно смотрится плотнее */
+}
+
+/* Когда открыто боковое меню или модалка — страница под ними не прокручивается */
+body.no-scroll { overflow: hidden; }
+
+.page { max-width: 1180px; margin: 0 auto; padding: 30px 20px 60px; }
+.page-hint { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+
+/* --- Появление при прокрутке -----------------------------------------------
+   Элемент с классом .reveal приглушён и чуть смещён вниз. Когда он попадает
+   в середину экрана, скрипт добавляет .visible (см. initScrollReveal в app.js).
+
+   Две тонкости, из-за которых это написано именно так:
+
+   1. Смещение задаём свойством translate, а НЕ transform. transform уже занят
+      подъёмом карточки при наведении — они затирали бы друг друга. Отдельное
+      свойство translate складывается с transform, а не спорит с ним.
+
+   2. Плавность (transition) объявлена НЕ здесь, а в стилях самих блоков.
+      Одно правило transition целиком заменяет другое, поэтому утилита не
+      должна его перехватывать — иначе сломается плавность наведения.
+   -------------------------------------------------------------------------- */
+/* 0.55, а не 0.3: на белом фоне приглушённый элемент почти исчезает,
+   тогда как на тёмном 0.3 ещё оставляла его различимым. */
+.reveal { opacity: 0.55; translate: 0 26px; }
+.reveal.visible { opacity: 1; translate: 0 0; }
+
+a { color: var(--accent); }
+
+
+/* ============================================================================
+   2. ШАПКА (hero) — фото с медленным зумом
+   ============================================================================ */
+
+.hero {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  border-bottom: 4px solid var(--accent);
+}
+/* Фото. Сам путь к картинке подставляет app.js из данных заведения. */
+.hero-bg {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--surface); /* если фото не загрузилось — не белый провал */
+  animation: zoom 20s ease-in-out infinite alternate;
+  z-index: 0;
+}
+/* Затемнение поверх фото, чтобы текст читался.
+   Берём --overlay, а не --background: фон сайта белый, и заливка им
+   выбелила бы фотографию вместе с надписями. */
+.hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(rgba(var(--overlay-rgb), 0.5), rgba(var(--overlay-rgb), 0.85));
+  z-index: 1;
+}
+.hero-content { position: relative; z-index: 2; }
+
+@keyframes zoom { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+/* Надписи в шапке лежат на тёмном фото, поэтому берут светлый акцент,
+   а не основной тёмный — иначе слились бы с затемнением. */
+.hero-emoji { font-size: 40px; margin-bottom: 6px; }
+.hero h1 {
+  font-size: clamp(32px, 5.5vw, 58px);
+  letter-spacing: 0.01em;
+  color: var(--accentLight);
+  text-shadow: 2px 2px 12px rgba(0, 0, 0, 0.55);
+}
+.hero-sub {
+  margin-top: 12px;
+  font-size: clamp(13px, 1.4vw, 16px);
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* Крупная шапка на странице заведения — «представление» ресторана.
+   Стоит НИЖЕ правил .hero: специфичность у них одинаковая, поэтому
+   выигрывает то, что записано последним. */
+.hero-lg { height: 440px; }
+.hero-lg h1 { font-size: clamp(38px, 7vw, 76px); }
+
+/* --- Шапка во весь экран с наплывом содержимого ----------------------------
+   position: sticky удерживает фото на месте, пока белый блок с содержимым
+   наезжает на него сверху — эффект слоёв, как на apple.com. Всё на CSS,
+   без обработчиков прокрутки: браузер делает это плавно сам.
+
+   100svh, а не 100vh: на телефоне адресная строка то появляется, то
+   исчезает, и 100vh дёргает высоту при каждой прокрутке.
+   -------------------------------------------------------------------------- */
+.hero-full {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  height: 100vh;
+  height: 100svh;
+  min-height: 500px;
+  border-bottom: none;
+}
+.hero-full h1 { font-size: clamp(40px, 8vw, 88px); }
+.hero-full .hero-sub { max-width: 620px; margin-left: auto; margin-right: auto; }
+
+/* Блок, который наезжает на фотографию.
+   z-index выше шапки + непрозрачный фон = содержимое перекрывает фото
+   по мере прокрутки. Скруглённый верх усиливает ощущение слоя,
+   который надвигается поверх. */
+.venue-scroll {
+  position: relative;
+  z-index: 1;
+  background: var(--background);
+  border-radius: 28px 28px 0 0;
+  margin-top: -28px;                    /* прячем скругление под низ фото */
+  box-shadow: 0 -18px 46px rgba(0, 0, 0, 0.14);
+}
+
+/* Стрелка-подсказка внизу шапки */
+.hero-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 2;
+  width: 40px; height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 17px;
+  animation: heroNudge 2.4s ease-in-out infinite;
+}
+@keyframes heroNudge {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(7px); }
+}
+
+/* Белый блок, который наезжает на фото */
+.venue-body-wrap {
+  position: relative;
+  z-index: 1;
+  margin-top: -32px;                      /* заходит на нижний край фото */
+  background: var(--background);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.22);
+}
+
+
+/* ============================================================================
+   3. НАВИГАЦИЯ И ГАМБУРГЕР
+   ============================================================================ */
+
+.nav {
+  position: sticky;      /* прилипает к верху при прокрутке */
+  top: 0;
+  z-index: 60;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 58px;    /* отступ по бокам — под гамбургер */
+  min-height: 54px;
+}
+
+/* Левый угол: гамбургер и знак бренда */
+.nav-left {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Знак бренда: логотип + название --- */
+.brandmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+.brandmark:hover { filter: brightness(1.15); }
+.brandmark .logo { width: 26px; height: 26px; flex-shrink: 0; }
+/* Название рядом со знаком — засечное, чуть разреженное */
+.brandmark span { letter-spacing: 0.04em; }
+.nav a { color: var(--accent); text-decoration: none; margin: 0 12px; font-size: 15px; }
+.nav a:hover { text-decoration: underline; }
+.nav a.current { color: var(--text); text-decoration: underline; } /* текущая страница */
+
+/* Кнопка ☰ — первая в левой группе */
+.burger {
+  width: 40px; height: 40px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+.burger:hover { border-color: var(--accent); }
+
+
+/* ============================================================================
+   4. БОКОВОЕ МЕНЮ
+   ============================================================================ */
+
+/* Затемнение всей страницы. visibility прячет его от кликов, когда закрыто. */
+.side-backdrop {
+  position: fixed; inset: 0;
+  /* Затемнение слабее, чем у шторки: карточка небольшая, гасить весь
+     экран незачем — но клик по фону по-прежнему закрывает меню. */
+  background: rgba(0, 0, 0, 0.42);
+  z-index: 90;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s;
+}
+.side-backdrop.open { opacity: 1; visibility: visible; }
+
+/* Сама панель — не шторка во всю высоту, а плавающая карточка, которая
+   раскрывается под кнопкой ☰. Точные top/left/max-height ставит скрипт
+   (positionSidebar в app.js): кнопка ездит вместе с липкой навигацией,
+   поэтому привязать координаты намертво в CSS нельзя. */
+.sidebar {
+  position: fixed;
+  top: 66px;
+  left: 12px;
+  width: 340px;
+  max-width: calc(100vw - 28px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  z-index: 100;
+  overflow-y: auto;
+  padding: 22px 22px 0;
+  display: flex;
+  flex-direction: column;
+
+  /* Появляется всплытием, а не выездом сбоку */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+.sidebar.open { opacity: 1; visibility: visible; transform: none; }
+
+/* --- Содержимое ------------------------------------------------------------
+   Минималистичная подача: никаких рамок-кнопок и заголовков групп.
+   Иерархию задаёт только типографика — жирное белое против тусклого серого.
+   -------------------------------------------------------------------------- */
+
+.side-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 30px; height: 30px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 24px; line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+.side-close:hover { color: var(--text); }
+
+/* Название заведения — мелко и тускло: это подпись, а не заголовок */
+.side-brand {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  padding-right: 34px;   /* не заезжает под крестик */
+}
+
+/* Разделы — просто крупный жирный текст, без плашек */
+.side-nav { display: flex; flex-direction: column; gap: 3px; }
+.side-nav a {
+  color: var(--text);
+  font-size: 19px;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 8px 0;
+}
+.side-nav a:hover { color: var(--accent); }
+
+.side-sep { height: 1px; background: var(--border); margin: 22px 0; }
+
+/* Контакты: главное — жирным, второстепенное — тусклым под ним */
+.side-strong { color: var(--text); font-size: 15px; font-weight: bold; line-height: 1.4; }
+.side-dim    { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 3px; }
+
+.side-phone {
+  /* flex-start, а не inline-block: панель — колоночный flex, и без этого
+     ссылка растянулась бы на всю ширину вместе с областью наведения */
+  align-self: flex-start;
+  margin-top: 18px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: bold;
+  text-decoration: none;
+}
+a.side-phone:hover { color: var(--accent); }
+
+/* Соцсети — только иконки, без подписей, как на референсе */
+.side-icons { display: flex; gap: 12px; margin-top: 18px; align-self: flex-start; }
+.side-icons a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+}
+.side-icons a:hover { border-color: var(--accent); color: var(--accent); }
+.side-icons svg { width: 21px; height: 21px; }
+
+.side-link {
+  align-self: flex-start;
+  margin-top: 20px;
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.side-link:hover { color: var(--accent); }
+
+/* Нижний блок — как блок «Скачайте приложение» на референсе:
+   прижат к низу, с другой подложкой, во всю ширину панели. */
+.side-foot {
+  margin: 24px -22px 0;      /* минус-поля — чтобы подложка шла во всю ширину карточки */
+  padding: 18px 22px 20px;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+}
+.side-foot-title { color: var(--accent); font-size: 16px; font-weight: bold; letter-spacing: 2px; }
+
+
+/* ============================================================================
+   5. КНОПКИ И ФОРМЫ
+   ============================================================================ */
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--accent);
+  color: var(--onAccent);   /* белый текст на фирменной заливке */
+  border: none;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: bold;
+  font-family: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+/* Прозрачная кнопка — для второстепенных действий */
+.btn-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.btn-ghost:hover { background: rgba(var(--accent-rgb), 0.12); }
+
+/* WhatsApp — фирменный зелёный, он не зависит от темы заведения */
+.btn-wa { background: #25D366; color: #06210E; }
+
+/* Поля формы */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+.field input:focus,
+.field select:focus { outline: none; border-color: var(--accent); }
+.field input::placeholder { color: var(--muted); opacity: 0.7; }
+
+/* Два поля в одну строку (дата + время) */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Красная подсказка об ошибке под формой */
+.form-error { color: var(--st-busy); font-size: 13px; margin-bottom: 12px; min-height: 18px; }
+
+
+/* ============================================================================
+   6. МОДАЛЬНЫЕ ОКНА (общий каркас для блюда и для брони)
+   ============================================================================ */
+
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 110;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  position: relative;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-body { padding: 24px; }
+.modal h2 { color: var(--accent); font-size: 22px; margin-bottom: 6px; line-height: 1.25; }
+.modal p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+/* Картинка блюда в окне — см. .dish-img.in-modal в разделе «Меню» */
+.modal-price { color: var(--text); font-size: 20px; font-weight: bold; margin-bottom: 16px; }
+.modal-sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+.block-label {
+  color: var(--accent2);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 16px 0 6px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px; right: 14px;
+  width: 34px; height: 34px;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  border: none;
+  border-radius: 50%;
+  font-size: 20px; line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  font-family: inherit;
+}
+.close-btn:hover { background: var(--st-busy); }
+
+/* Экран «Заявка принята» */
+.done { text-align: center; padding: 34px 24px; }
+.done .tick { font-size: 54px; margin-bottom: 12px; }
+.done h2 { margin-bottom: 10px; }
+.done .done-box {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 18px 0;
+  text-align: left;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.done .done-box b { color: var(--accent); }
+
+
+/* ============================================================================
+   7. ГЛАВНАЯ АФИША (index.html)
+   ============================================================================ */
+
+/* --- Декоративный фон -------------------------------------------------------
+   Один блок на всю страницу: свечения по углам + точечная сетка.
+   position: fixed — свечения остаются на месте при прокрутке.
+   pointer-events: none — фон не перехватывает клики по карточкам.
+   Всё чистым CSS, без картинок.
+   -------------------------------------------------------------------------- */
+/* Фон витрины теперь чисто белый — как у Apple. Точечная сетка, свечения
+   и геометрические контуры убраны намеренно: на белом они читаются как
+   грязь и отвлекают от фотографий заведений, а именно фото должно быть
+   единственным ярким пятном на странице.
+   Разметка .bg-decor оставлена в index.html — если понадобится вернуть
+   фактуру, достаточно снять display: none. */
+.bg-decor { display: none; }
+
+/* Содержимое — поверх фона */
+.brand, .section-head, .venues-grid, .promo-wrap { position: relative; z-index: 1; }
+
+/* Обёртка ленты акций на главной — те же поля, что у сетки заведений */
+.promo-wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px 70px;
+  transition: opacity 0.6s ease, translate 0.6s ease;  /* для .reveal */
+}
+
+/* Общая обёртка для блоков главной: подборки, статьи, поиск */
+.wrap { position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: 0 20px 40px; }
+
+/* --- Шапка бренда --- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  padding: 13px 20px;
+  background: rgba(var(--background-rgb), 0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- Мега-меню в шапке -----------------------------------------------------
+   Панель раскрывается под пунктом. Открытие на CSS через :hover по всему
+   пункту — панель лежит внутри него, поэтому наведение не теряется.
+   Клик обрабатывает wireMegaMenu: на сенсорных экранах наведения нет.
+   -------------------------------------------------------------------------- */
+.nav-menu { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+.nav-item { position: relative; }
+
+.nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.nav-trigger:hover { background: rgba(var(--text-rgb), 0.05); }
+.nav-trigger .chev { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+.nav-item:hover .chev, .nav-item.open .chev { transform: rotate(180deg); }
+
+/* Панель раскрывается во всю ширину экрана — как на apple.com.
+   Работает это так: у .nav-item убран position: relative, поэтому
+   абсолютная .mega отсчитывается от .topbar (он sticky, а значит
+   позиционированный) и растягивается от края до края. */
+.nav-item { position: static; }
+
+.mega {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+}
+.nav-item:hover .mega,
+.nav-item.open .mega { visibility: visible; opacity: 1; transform: none; }
+
+.mega-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 20px 48px;
+  display: flex;
+  gap: 72px;
+}
+.mega-col { min-width: 0; }
+
+/* Серый заголовок категории — мелкий и неброский, как у Apple */
+.mega-title {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.mega-item {
+  display: block;
+  padding: 5px 0;
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: none;
+}
+.mega-item:hover { color: var(--accent2); }
+
+/* Первая колонка — крупные ссылки, они задают иерархию вместо иконок */
+.mega-col.large .mega-item {
+  padding: 7px 0;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+/* Кнопка-бургер в шапке главной: видна только на узком экране */
+.topbar-burger {
+  display: none;
+  width: 40px; height: 40px;
+  margin-left: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* --- Поиск заведений --- */
+.search-wrap { position: relative; z-index: 1; max-width: 1040px; margin: 0 auto 26px; padding: 0 20px; }
+.search-box { position: relative; }
+.search-box input {
+  width: 100%;
+  padding: 15px 18px 15px 46px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+.search-box input:focus { outline: none; border-color: var(--accent2); }
+.search-box input::placeholder { color: var(--muted); }
+.search-icon {
+  position: absolute; left: 17px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-size: 15px; pointer-events: none;
+}
+.search-empty { color: var(--muted); text-align: center; padding: 34px 0; font-size: 14px; line-height: 1.6; }
+
+/* --- Подборки «Популярное» и «Новое» — компактные карточки лентой --- */
+.top-strip { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.top-strip::-webkit-scrollbar { display: none; }
+
+.mini-card {
+  flex-shrink: 0;
+  width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.mini-card:hover { transform: translateY(-4px); border-color: var(--venue-accent, var(--accent)); }
+.mini-cover { position: relative; height: 120px; background-size: cover; background-position: center; }
+.mini-cover::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    rgba(var(--venue-overlay-rgb, var(--overlay-rgb)), 0.1),
+    rgba(var(--venue-overlay-rgb, var(--overlay-rgb)), 0.9));
+}
+.mini-body { padding: 12px 14px 14px; }
+.mini-name { color: var(--venue-accent, var(--accent)); font-size: 16px; font-weight: bold; margin-bottom: 3px; }
+.mini-meta { color: var(--muted); font-size: 12px; }
+.mini-rating { color: var(--text); font-size: 12px; margin-top: 8px; }
+
+/* --- Статьи и новости --- */
+.articles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 18px; }
+.article-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-decoration: none;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.article-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+.article-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.article-tag {
+  background: var(--background);
+  border: 1px solid var(--border);
+  color: var(--accent2);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.article-emoji { font-size: 26px; }
+.article-card h3 { color: var(--text); font-size: 16px; line-height: 1.35; margin-bottom: 8px; }
+.article-excerpt { color: var(--muted); font-size: 13px; line-height: 1.55; flex: 1; margin-bottom: 12px; }
+.article-date { color: var(--muted); font-size: 11px; }
+
+/* --- «Свяжитесь с нами»: три карточки --------------------------------------
+   Светлые, с тонкой рамкой и иконкой в кружке. Одна из трёх — главная,
+   у неё изумрудная кнопка: привлечение заведений важнее остальных двух.
+   -------------------------------------------------------------------------- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  padding: 30px 26px 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  transition: transform 0.16s, box-shadow 0.16s;
+}
+.contact-card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.07); }
+
+.contact-icon {
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 18px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 23px;
+}
+.contact-card h3 { font-family: var(--font-head); font-size: 22px; font-weight: 600; color: var(--accent); margin-bottom: 10px; }
+.contact-card p { color: var(--muted); font-size: 14px; line-height: 1.6; flex: 1; margin-bottom: 20px; }
+.contact-card .btn { width: auto; align-self: flex-start; padding: 12px 22px; font-size: 14px; }
+
+/* Честная пометка на блоках, где данные ещё демонстрационные */
+.demo-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 4px 10px;
+  background: var(--background);
+  border: 1px dashed var(--border);
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  vertical-align: middle;
+}
+
+/* --- Первый экран главной: текст слева, знак справа -------------------------
+   Две колонки держат композицию: пустая правая половина смотрелась бы
+   незаконченной. На телефоне колонки складываются в одну.
+   -------------------------------------------------------------------------- */
+.hero-home {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 64px 20px 56px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-title {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: clamp(34px, 5.2vw, 62px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+/* Ключевые слова — единственным цветом действия */
+.hero-title em { font-style: normal; color: var(--accent2); }
+
+.hero-lead {
+  margin-top: 22px;
+  max-width: 460px;
+  font-size: clamp(15px, 1.7vw, 19px);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.hero-actions .btn { width: auto; padding: 15px 30px; font-size: 16px; }
+
+/* Главная кнопка — изумруд, вторичная — контур */
+.btn-action { background: var(--accent2); color: #FFFFFF; }
+.btn-action:hover { filter: brightness(1.12); }
+
+/* Правая половина: крупный знак с мягким свечением в тон акценту */
+.hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  color: var(--accent);
+}
+.hero-visual::before {
+  content: '';
+  position: absolute;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent2-rgb), 0.10), transparent 68%);
+}
+.hero-visual svg { position: relative; width: min(340px, 78%); height: auto; }
+
+/* --- Каскад появления -------------------------------------------------------
+   fill-mode both — элемент скрыт до начала своей анимации и остаётся
+   в конечном виде после. Без него он мигнул бы до запуска.
+   Анимация проигрывается один раз при загрузке.
+   -------------------------------------------------------------------------- */
+@keyframes heroDrop  { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
+@keyframes heroSlide { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: none; } }
+@keyframes heroRise  { from { opacity: 0; transform: translateY(16px); }  to { opacity: 1; transform: none; } }
+@keyframes heroFade  { from { opacity: 0; transform: scale(0.94); }       to { opacity: 1; transform: none; } }
+
+.hero-title   { animation: heroDrop  0.65s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hero-lead    { animation: heroSlide 0.6s  cubic-bezier(0.2, 0.7, 0.2, 1) 0.18s both; }
+.hero-actions { animation: heroRise  0.55s cubic-bezier(0.2, 0.7, 0.2, 1) 0.34s both; }
+.hero-visual  { animation: heroFade  0.9s  cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both; }
+
+.brand { text-align: center; padding: 78px 20px 40px; }
+.brand h1 { font-size: clamp(34px, 6vw, 68px); letter-spacing: -0.015em; color: var(--accent); }
+.brand .brand-tagline { color: var(--text); letter-spacing: 3px; margin-top: 10px; font-size: 15px; }
+.brand .brand-desc { color: var(--muted); font-size: clamp(14px, 1.5vw, 17px); margin: 20px auto 0; max-width: 520px; }
+
+.section-head { max-width: 1040px; margin: 30px auto 16px; padding: 0 20px; }
+.section-head h2 { color: var(--accent); font-size: 18px; letter-spacing: 3px; text-transform: uppercase; }
+
+/* --- Витрина заведений в духе «Compare AirPods models» ----------------------
+   Никаких рамок, теней и цветных плашек: колонки просто стоят на белом,
+   разделённые тонкой линией снизу. Единственное яркое пятно — фотография
+   заведения. Фирменный цвет проявляется точечно: название и кнопка.
+   -------------------------------------------------------------------------- */
+.venues-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px 24px;   /* снизу немного — дальше идёт блок акций */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0;                 /* вместо промежутков — разделители у колонок */
+}
+.venue-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 22px 30px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-decoration: none;
+  color: inherit;
+  /* Последние два — для появления при прокрутке (класс .reveal).
+     Держим их здесь, а не в .reveal: transition объявляется целиком,
+     и утилита стёрла бы плавность наведения. */
+  transition: opacity 0.6s ease, translate 0.6s ease;
+}
+/* --venue-accent, --venue-overlay-rgb и --venue-fg ставит index.html для карточки
+   из venue.theme. Поэтому Circus на витрине золотой, а следующее заведение
+   будет своего цвета — фон при этом остаётся нейтральным.
+   Через запятую указан запасной цвет на случай, если переменной нет. */
+/* Наведение поднимает только фотографию — сама колонка остаётся спокойной */
+.venue-card:hover .venue-cover { transform: scale(1.02); }
+
+.venue-cover {
+  width: 100%;
+  height: 210px;
+  margin-bottom: 22px;
+  border-radius: 14px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--surface);
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.venue-body { display: flex; flex-direction: column; align-items: center; width: 100%; }
+/* Название — единственное место, где на белом виден фирменный цвет заведения */
+.venue-body h3 { color: var(--venue-accent, var(--accent)); font-size: 24px; letter-spacing: 0; margin-bottom: 6px; }
+.venue-body .venue-place { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.venue-body .venue-about { color: var(--text); font-size: 14px; line-height: 1.55; margin-bottom: 16px; }
+
+/* Средний чек подаётся как цена у Apple: отдельной строкой над кнопкой */
+.venue-price { color: var(--text); font-size: 17px; margin-bottom: 16px; }
+
+/* Живая строка «столы свободны» — под кнопкой, как «Learn more ›» у Apple */
+.venue-free { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.venue-free::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--st-free); }
+
+/* Кнопка в цвете заведения — второй и последний фирменный акцент */
+.venue-card .btn { background: var(--venue-accent, var(--accent)); width: auto; padding: 11px 26px; font-size: 14px; }
+
+.venue-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 15px; }
+.tag {
+  background: var(--background);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+/* Зелёная точка «столы свободны». Текст обычного цвета, а не зелёный:
+   на белом фоне зелёный слишком светлый для мелкой надписи. */
+.tag.live { color: var(--text); border-color: var(--st-free); }
+.tag.live::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--st-free);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Плитка-заглушка «скоро» для будущих заведений */
+.venue-card.soon-card {
+  justify-content: center;
+  padding: 70px 24px;
+  color: var(--muted);
+  min-height: 300px;
+}
+.venue-card.soon-card .big { font-size: 30px; margin-bottom: 14px; opacity: 0.35; }
+.venue-card.soon-card p { font-size: 13px; line-height: 1.6; }
+
+
+/* --- Подвал сайта -----------------------------------------------------------
+   Отделён тонкой линией сверху и чуть более светлой подложкой, чтобы
+   отделиться от свечений на фоне главной.
+   -------------------------------------------------------------------------- */
+.site-footer {
+  position: relative;
+  z-index: 1;                                    /* поверх декоративного фона */
+  margin-top: 20px;
+  padding: 44px 20px 28px;
+  border-top: 1px solid var(--border);
+  background: rgba(var(--surface-rgb), 0.55);
+}
+
+/* auto-fit сам решает, сколько колонок поместится:
+   на широком экране четыре, на телефоне одна. Отдельное правило не нужно. */
+.footer-cols {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 28px 30px;
+}
+
+.footer-col h4 {
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.footer-col a {
+  display: block;
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+.footer-col a:hover { color: var(--accent); }
+
+/* Важная ссылка для рестораторов — рисуется кнопкой в холодном синем */
+.footer-col a.primary {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 10px 15px;
+  border: 1px solid var(--accent2);
+  border-radius: 9px;
+  color: var(--accent2);
+  font-size: 13px;
+  font-weight: bold;
+}
+.footer-col a.primary:hover { background: rgba(var(--accent2-rgb), 0.14); color: var(--accent2); }
+
+/* Соцсети — плашками с иконкой */
+.footer-social { display: flex; flex-wrap: wrap; gap: 8px; }
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+}
+.footer-social a:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Нижняя строка: копирайт слева, название платформы справа */
+.footer-bottom {
+  max-width: 1040px;
+  margin: 34px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.footer-note { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.footer-logo { color: var(--accent); font-size: 20px; font-weight: bold; letter-spacing: 4px; }
+
+
+/* ============================================================================
+   8. ПРОМО-БАННЕРЫ
+   ----------------------------------------------------------------------------
+   Используются в двух местах: общая лента на главной и блок «Акции»
+   на странице заведения. Цвета берутся из данных промо и из темы
+   заведения — через переменные --promo-bg и --promo-fg, их ставит скрипт.
+   ============================================================================ */
+
+/* Заголовок блока внутри страницы заведения */
+.block-title {
+  color: var(--accent);
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 34px 0 16px;
+}
+
+/* Лента: на широком экране всё влезает, на узком — прокручивается вбок */
+.promo-strip {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.promo-strip::-webkit-scrollbar { display: none; }
+.promo-strip { scrollbar-width: none; }
+
+.promo-card {
+  position: relative;
+  flex-shrink: 0;
+  width: 232px;
+  min-height: 290px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--promo-bg, var(--surface));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.16s, box-shadow 0.16s;
+}
+.promo-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+
+/* Верхняя строка: из какого заведения (только на главной) и метка NEW */
+.promo-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; position: relative; z-index: 2; }
+
+.promo-venue {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+.promo-badge {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--promo-bg, #000);
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 4px 9px;
+}
+
+/* Эмодзи-заглушка вместо фото: крупно и приглушённо, как фоновая картинка */
+.promo-emoji {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 104px;
+  line-height: 1;
+  opacity: 0.28;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Текст прижат к низу карточки */
+.promo-text { margin-top: auto; position: relative; z-index: 2; }
+.promo-title {
+  color: var(--promo-fg, #FFFFFF);
+  font-size: 17px;
+  font-weight: bold;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.promo-subtitle { color: rgba(255, 255, 255, 0.75); font-size: 12px; line-height: 1.4; }
+
+.promo-price {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: bold;
+  position: relative;
+  z-index: 2;
+}
+
+
+/* ============================================================================
+   9. КАРТА ЗАЛА И БЛОКИ СТРАНИЦЫ ЗАВЕДЕНИЯ (venue.html)
+   ============================================================================ */
+
+/* --- Вкладки-навигация по странице заведения -------------------------------
+   Липнут под верхней навигацией (та высотой 54px). Клик прокручивает
+   к разделу, активная вкладка подсвечивается при прокрутке.
+   -------------------------------------------------------------------------- */
+.venue-tabs {
+  position: sticky;
+  top: 54px;
+  z-index: 55;
+  display: flex;
+  gap: 2px;
+  padding: 0 20px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.venue-tabs::-webkit-scrollbar { display: none; }
+.venue-tabs a {
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.venue-tabs a:hover { color: var(--text); }
+.venue-tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Якоря разделов: 118px — это высота навигации плюс вкладок,
+   иначе заголовок раздела уезжает под них при прокрутке. */
+.section-anchor { scroll-margin-top: 118px; }
+
+/* --- Галерея фото --- */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.photo-item {
+  position: relative;
+  height: 240px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.photo-item .cap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 28px 14px 12px;
+  color: #FFFFFF;
+  font-size: 13px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* --- Отзывы --- */
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.rating-score { color: var(--accent); font-size: clamp(32px, 4vw, 44px); line-height: 1; }
+.stars { color: var(--accent2); letter-spacing: 3px; }   /* бронза читается на белом */
+.rating-count { color: var(--muted); font-size: 13px; margin-top: 5px; }
+
+.reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.review-card {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.review-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; }
+.review-author { color: var(--text); font-size: 15px; font-weight: bold; }
+.review-date { color: var(--muted); font-size: 12px; }
+.review-card .stars { font-size: 13px; }
+.review-text { color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 9px; }
+
+/* --- Детали: часы, кухня, средний чек --- */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.detail-item {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.detail-label { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.detail-value { color: var(--text); font-size: 15px; line-height: 1.45; }
+
+/* --- Слоган и история под шапкой --- */
+.about-block { max-width: 760px; margin: 10px 0 6px; }
+.about-tagline {
+  color: var(--text);
+  font-size: clamp(24px, 3.2vw, 40px);
+  line-height: 1.25;
+  margin-bottom: 20px;
+}
+.about-story { color: var(--muted); font-size: clamp(15px, 1.6vw, 17px); line-height: 1.75; }
+
+/* --- Заглушка под будущий 360-обзор ---------------------------------------
+   Место уже размечено, чтобы потом просто вставить сюда плеер панорамы,
+   не трогая порядок блоков на странице.
+   -------------------------------------------------------------------------- */
+.panorama-stub {
+  height: 300px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 20px;
+}
+.panorama-stub .icon { font-size: 46px; opacity: 0.45; }
+.panorama-stub .label { color: var(--accent); font-size: 17px; letter-spacing: 1px; }
+.panorama-stub .note { color: var(--muted); font-size: 13px; line-height: 1.55; max-width: 380px; }
+
+/* --- Карта «как добраться» -------------------------------------------------
+   Пока в данных нет ссылки на встроенную карту, на этом месте стоит
+   заглушка с адресом. Появится ссылка — заглушка заменится картой.
+   -------------------------------------------------------------------------- */
+.map-frame {
+  position: relative;
+  height: 360px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;               /* карта не вылезает за скругление */
+  background: var(--surface);
+}
+.map-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+.map-stub {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px;
+  text-align: center;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+}
+.map-stub .icon { font-size: 42px; opacity: 0.45; }
+.map-stub .addr { color: var(--text); font-size: 17px; font-weight: bold; }
+.map-stub .note { color: var(--muted); font-size: 13px; line-height: 1.55; max-width: 400px; }
+.map-stub .btn { width: auto; padding: 11px 22px; margin-top: 6px; }
+
+/* --- Переход в меню внизу страницы --- */
+.menu-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 36px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.menu-cta-title { color: var(--accent); font-size: 19px; margin-bottom: 5px; }
+.menu-cta-text { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.menu-cta .btn { width: auto; flex-shrink: 0; padding: 12px 26px; }
+
+.layout { display: flex; gap: 26px; align-items: flex-start; }
+
+/* Колонка со схемой и легендой */
+.hall-wrap { flex: 1; min-width: 0; }
+
+/* Окно, внутри которого схема сжимается на узком экране (см. fitHall в venue.html).
+   Благодаря этому координаты столов в venues.js остаются в пикселях. */
+.hall-view { width: 100%; overflow: hidden; }
+
+.hall {
+  position: relative;
+  /* content-box: ширина 720px — это внутренняя площадь зала, без учёта рамки.
+     Тогда координаты столов из данных ложатся ровно, без смещения на рамку. */
+  box-sizing: content-box;
+  transform-origin: top left;   /* сжимаем от левого верхнего угла */
+  background-color: var(--surface);
+  border: 3px solid transparent;
+  /* Панорамные окна: золотой пунктир по периметру */
+  border-image: repeating-linear-gradient(90deg, var(--accent) 0 12px, transparent 12px 22px) 3;
+  border-radius: 4px;
+}
+
+/* Декор: касса, бар, люстра */
+.decor {
+  position: absolute;
+  background: var(--background);
+  border: 1px dashed var(--decor);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.decor.round {
+  background: transparent;
+  border: 3px solid var(--accent2);
+  border-radius: 50%;
+  color: var(--accent2);
+  font-size: 20px;
+}
+
+.zone-label { position: absolute; font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+/* Стол */
+.table {
+  position: absolute;
+  width: 58px; height: 46px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: bold;
+  color: #FFFFFF;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s;
+}
+.table:hover { transform: scale(1.08); }
+.table.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.4); }
+/* Барный стул — маленький квадратик */
+.table.seat { width: 26px; height: 26px; font-size: 10px; border-radius: 6px; }
+
+/* Цвета статусов (значения приходят из tableStatuses в venues.js) */
+.free     { background-color: var(--st-free); }
+.busy     { background-color: var(--st-busy); }
+.soon     { background-color: var(--st-soon); }
+.reserved { background-color: var(--st-reserved); }
+
+/* Таймер под столом */
+.timer {
+  position: absolute;
+  bottom: -17px; left: 0; right: 0;
+  text-align: center;
+  font-size: 9px; font-weight: normal;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.legend { display: flex; gap: 18px; margin-top: 18px; font-size: 14px; flex-wrap: wrap; }
+.dot { display: inline-block; width: 13px; height: 13px; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
+
+/* Панель справа от схемы */
+.panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  min-height: 200px;
+}
+.panel h3 { color: var(--text); font-size: 20px; margin-bottom: 12px; }
+.panel .row { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.panel .row b { color: var(--text); font-weight: normal; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #FFFFFF;
+  margin-bottom: 12px;
+}
+
+/* Сводка «свободно N из M» над схемой */
+.hall-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.stat b { color: var(--accent); font-size: 16px; margin-right: 4px; }
+
+
+/* ============================================================================
+   10. МЕНЮ (menu.html)
+   ============================================================================ */
+
+/* --- Блок «Рекомендуем»: плитки бесшовно едут влево --- */
+.reco-wrap { max-width: 1100px; margin: 30px auto 0; padding: 0 20px; overflow: hidden; }
+.reco-title { color: var(--accent); font-size: 22px; letter-spacing: 2px; margin-bottom: 14px; }
+.reco-track-mask { overflow: hidden; }
+/* Список продублирован в app.js дважды, поэтому сдвиг на -50% выглядит бесшовно */
+.reco-track { display: flex; gap: 16px; width: max-content; animation: slide 30s linear infinite; }
+.reco-track:hover { animation-play-state: paused; } /* при наведении останавливается */
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.reco-card {
+  width: 170px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+}
+.reco-card:hover { border-color: var(--accent); }
+/* --- Картинка блюда --------------------------------------------------------
+   Один блок на три места: карточка, плитка «Рекомендуем», окно блюда.
+   Различаются только размером — классы in-card / in-reco / in-modal.
+
+   Пока фото нет, рисуем заглушку: градиент в цвете раздела, мягкое световое
+   пятно и эмодзи с тенью. Появится фото — класс has-photo подменит фон,
+   и всё остальное останется как есть.
+   -------------------------------------------------------------------------- */
+.dish-img {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    /* блик сверху, чтобы плашка не была плоской */
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 58%),
+    /* цвет раздела, уходящий в темноту снизу */
+    linear-gradient(150deg, var(--dish-color, var(--decor)) 0%, rgba(0, 0, 0, 0.55) 100%);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Тонкая диагональная штриховка — след от прежней полосатой заглушки,
+   но почти незаметный: даёт фактуру, не споря с эмодзи. */
+.dish-img::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(45deg,
+    rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 9px);
+}
+
+/* Световое пятно под эмодзи */
+.dish-img::after {
+  content: '';
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 70%);
+}
+
+.dish-emoji {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+}
+
+/* Когда у блюда появится настоящее фото: убираем узор и световое пятно.
+   Сам градиент перебивается инлайновым background-image со ссылкой на файл. */
+.dish-img.has-photo { background-color: var(--background); }
+.dish-img.has-photo::before,
+.dish-img.has-photo::after { display: none; }
+
+/* --- Крупный обзор блюда в окне ---------------------------------------------
+   Белая сцена, фото по центру, кнопка поворота в углу — как у Apple.
+   -------------------------------------------------------------------------- */
+.dish-view {
+  position: relative;
+  padding: 26px 20px 16px;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  text-align: center;
+}
+.dish-stage {
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* pan-y — вертикальная прокрутка страницы пальцем работает,
+     а горизонтальное движение забирает вращение */
+  touch-action: pan-y;
+}
+.dish-view.spinnable .dish-stage { cursor: grab; }
+.dish-view.spinnable .dish-stage:active { cursor: grabbing; }
+
+.dish-frame { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; }
+
+.dish-spin {
+  position: absolute;
+  right: 16px; bottom: 46px;
+  width: 40px; height: 40px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dish-spin:hover { border-color: var(--accent); color: var(--accent); }
+
+.dish-hint { margin-top: 12px; color: var(--muted); font-size: 12px; }
+
+/* Заглушка внутри сцены — та же плашка, что и в карточках, но крупная */
+.dish-img.in-view { width: 100%; height: 100%; border-radius: 12px; }
+.dish-img.in-view .dish-emoji { font-size: 76px; }
+
+/* --- Карусель блюда --------------------------------------------------------
+   Горизонтальная прокрутка со «щелчком» по слайдам. Свайп пальцем работает
+   сам, стрелки просто прокручивают на ширину экрана.
+   -------------------------------------------------------------------------- */
+.dish-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: 16px 16px 0 0;
+}
+.dish-track::-webkit-scrollbar { display: none; }
+.dish-slide { flex: 0 0 100%; scroll-snap-align: start; }
+.dish-slide .dish-view { border-radius: 0; }
+
+.dish-caption {
+  padding: 14px 20px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  min-height: 42px;      /* высота не скачет при смене подписи */
+}
+.dish-caption b { color: var(--text); font-weight: 600; }
+
+.dish-nav { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 4px; }
+.dish-arrow {
+  width: 34px; height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dish-arrow:hover { border-color: var(--accent); color: var(--accent); }
+.dish-dots { display: flex; gap: 6px; }
+.dish-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+.dish-dots .dot.on { background: var(--accent); }
+
+/* Последний слайд — весь состав списком */
+.ing-list { list-style: none; text-align: left; font-size: 15px; line-height: 2; color: var(--text); }
+.ing-list span { display: inline-block; width: 26px; }
+
+/* --- Граммовка и БЖУ --- */
+.nutrition {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 10px;
+  margin: 20px 0 4px;
+  padding: 16px 12px;
+  background: var(--surface);
+  border-radius: 12px;
+}
+.nutri-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.nutri-value { color: var(--text); font-size: 15px; font-weight: 600; }
+.nutri-label { color: var(--muted); font-size: 11px; letter-spacing: 0.3px; }
+
+/* Крупное описание под изображением */
+.dish-lead {
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.55;
+}
+.dish-lead b { color: var(--text); font-weight: 600; }
+
+/* Три размера под три места */
+.dish-img.in-card  { height: 110px; margin-bottom: 12px; }
+.dish-img.in-card  .dish-emoji { font-size: 40px; }
+.dish-img.in-reco  { height: 100px; margin-bottom: 10px; }
+.dish-img.in-reco  .dish-emoji { font-size: 34px; }
+.dish-img.in-modal { height: 190px; border-radius: 14px 14px 0 0; }
+.dish-img.in-modal .dish-emoji { font-size: 66px; }
+.reco-card .rc-name { font-size: 13px; color: var(--text); margin-bottom: 6px; line-height: 1.3; height: 34px; overflow: hidden; }
+.reco-card .rc-price { font-size: 15px; color: var(--accent); font-weight: bold; }
+
+/* --- Кнопки-фильтры разделов --- */
+.filters { max-width: 1100px; margin: 26px auto 0; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.filter-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 18px;
+  border-radius: 22px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.filter-btn:hover { background: var(--accent); color: var(--background); border-color: var(--accent); }
+
+/* --- Разделы и карточки блюд --- */
+.container { max-width: 960px; margin: 0 auto; padding: 20px 20px 60px; }
+.section-title {
+  color: var(--accent);
+  font-size: clamp(24px, 3.4vw, 36px);
+  margin: 54px 0 8px;
+  text-align: center;
+  letter-spacing: 0;
+  scroll-margin-top: 70px; /* чтобы липкая навигация не закрывала заголовок */
+}
+.section-title::before, .section-title::after { content: "\2726"; margin: 0 12px; color: var(--accent2); }
+.section-sub { text-align: center; color: var(--muted); font-style: italic; font-size: 14px; margin-bottom: 22px; }
+
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.card:hover { transform: translateY(-4px); border-color: var(--accent); }
+/* --- Блюдо на стопе --------------------------------------------------------
+   Не прячем из меню, а помечаем: гость видит, что блюдо есть в карте,
+   но сегодня его не подают. Скрытое блюдо вызвало бы вопрос «а где оно?».
+   -------------------------------------------------------------------------- */
+.dish-stop {
+  position: absolute;
+  top: 10px; left: 10px;
+  z-index: 2;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.card.stopped .dish-img { filter: grayscale(1); opacity: 0.75; }
+.card.stopped h3 { color: var(--muted); }
+.card.stopped .price { color: var(--muted); text-decoration: line-through; }
+.card.stopped .more { color: var(--muted); }
+.card.stopped:hover { border-color: var(--border); transform: none; }
+
+/* Строка «сегодня на стопе» под фильтрами */
+.stop-note {
+  max-width: 960px;
+  margin: 18px auto -6px;
+  padding: 0 20px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Предупреждение в окне блюда */
+.stop-warning {
+  margin-top: 14px;
+  padding: 11px 14px;
+  background: rgba(var(--overlay-rgb), 0.06);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--st-busy);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.card h3 { color: var(--text); font-size: 16px; margin-bottom: 6px; line-height: 1.3; }
+.card .desc { color: var(--muted); font-size: 12px; line-height: 1.4; margin-bottom: 10px; flex: 1; }
+.card .price { color: var(--accent); font-size: 18px; font-weight: bold; }
+.card .more { color: var(--accent2); font-size: 11px; margin-top: 6px; }
+
+
+/* ============================================================================
+   10.5. КАБИНЕТ ВЛАДЕЛЬЦА (owner.html)
+   ----------------------------------------------------------------------------
+   Страница-витрина будущей аналитики. Все числа демонстрационные — блок
+   .demo-strip говорит об этом прямо, чтобы никто не принял их за отчёт.
+   ============================================================================ */
+
+/* Полоса-предупреждение вверху страницы */
+.demo-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1180px;
+  margin: 0 auto 26px;
+  padding: 14px 18px;
+  background: rgba(var(--overlay-rgb), 0.05);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.demo-strip .icon { font-size: 22px; flex-shrink: 0; }
+
+/* Шапка кабинета: название заведения и выбор периода */
+.owner-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.owner-title { color: var(--accent); font-size: clamp(24px, 3.2vw, 36px); }
+.owner-sub { color: var(--muted); font-size: 14px; margin-top: 5px; }
+
+.period-switch { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-switch button {
+  padding: 9px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.period-switch button:hover { border-color: var(--accent); }
+.period-switch button.active { background: var(--accent); border-color: var(--accent); color: var(--onAccent); }
+
+/* Плитки показателей */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 34px;
+}
+.kpi {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.kpi-label { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.kpi-value { color: var(--text); font-size: 26px; font-weight: bold; line-height: 1.1; }
+.kpi-delta { font-size: 12px; margin-top: 7px; }
+.kpi-delta.up { color: var(--st-free); }
+.kpi-delta.down { color: var(--st-busy); }
+
+/* Столбчатый график выручки — чистый CSS, без библиотек */
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 210px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+.chart-bar {
+  width: 100%;
+  max-width: 46px;
+  background: var(--accent);
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+}
+.chart-col:nth-child(6) .chart-bar,
+.chart-col:nth-child(7) .chart-bar { background: var(--accent2); }  /* выходные */
+.chart-label { color: var(--muted); font-size: 11px; }
+
+/* Список топ-блюд с полосками */
+.top-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 18px; }
+.top-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.top-row:last-child { border-bottom: none; }
+.top-row .num { color: var(--muted); font-size: 13px; width: 18px; flex-shrink: 0; }
+.top-row .name { color: var(--text); font-size: 14px; flex: 1; min-width: 0; }
+.top-row .bar-track { width: 120px; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+/* display: block обязателен — у строчного span ширина и высота не работают */
+.top-row .bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.top-row .val { color: var(--muted); font-size: 13px; width: 62px; text-align: right; flex-shrink: 0; }
+
+/* Тепловая карта зала: те же координаты столов, цвет по выручке */
+.heat-legend { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.heat-scale { width: 150px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #E8E2DA, var(--accent)); }
+.table.heat { color: #FFFFFF; font-size: 11px; cursor: default; }
+.table.heat:hover { transform: scale(1.08); }
+
+/* Блок «появится позже» */
+.soon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.soon-item {
+  padding: 18px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+}
+.soon-item .icon { font-size: 26px; opacity: 0.5; margin-bottom: 10px; }
+.soon-item h4 { color: var(--text); font-size: 15px; margin-bottom: 6px; }
+.soon-item p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+
+/* ============================================================================
+   11. АДАПТИВ
+   ============================================================================ */
+
+/* --- Планшет и узкий ноутбук: панель уезжает под схему зала --- */
+@media (max-width: 900px) {
+  /* align-items: stretch обязателен: без него колонка со схемой не сужается
+     до ширины экрана, а остаётся шириной с саму схему (726px) и вылезает. */
+  .layout { flex-direction: column; align-items: stretch; }
+  .panel { width: 100%; }
+}
+
+/* --- Телефон --- */
+@media (max-width: 640px) {
+  /* Размеры заголовков тут не задаём: clamp() уже уменьшил их сам.
+     Остаются только высоты блоков и отступы. */
+  .hero { height: 220px; }
+  .hero-lg { height: 300px; }
+  /* Обязательно повторяем высоту полноэкранной шапки: правило .hero выше
+     имеет ту же специфичность и, стоя ниже в файле, перебило бы её —
+     шапка заведения схлопнулась бы до min-height. */
+  .hero-full { height: 100svh; }
+
+  .panorama-stub { height: 220px; }
+  .panorama-stub .icon { font-size: 38px; }
+  .map-frame { height: 280px; }
+  .map-stub .icon { font-size: 34px; }
+  .map-stub .addr { font-size: 15px; }
+
+  /* Знак бренда: на узком экране оставляем только логотип, название прячем —
+     иначе левый угол вытесняет ссылки навигации. */
+  .brandmark span { display: none; }
+  .nav { padding: 10px 46px 10px 62px; }
+  .nav-left { gap: 6px; }
+
+  .venue-tabs { padding: 0 14px; top: 50px; }
+  .venue-tabs a { padding: 12px 12px; font-size: 13px; }
+  .section-anchor { scroll-margin-top: 104px; }
+
+  .wrap { padding: 0 14px 32px; }
+  .search-wrap { padding: 0 14px; }
+  .articles-grid { grid-template-columns: 1fr; }
+  .photo-item { height: 200px; }
+  .rating-summary { padding: 16px; gap: 14px; }
+
+  /* Кабинет владельца */
+  .kpi-value { font-size: 22px; }
+  .chart { height: 170px; gap: 5px; padding: 12px; }
+  .top-row .bar-track { width: 60px; }
+  .top-row .val { width: 54px; font-size: 12px; }
+  .demo-strip { font-size: 12px; padding: 12px 14px; }
+
+  /* Кнопка «Смотреть меню» уходит под текст и занимает всю ширину */
+  .menu-cta { flex-direction: column; align-items: stretch; text-align: center; }
+  .menu-cta .btn { width: 100%; }
+  .hero-emoji { font-size: 32px; }
+  .hero-sub { font-size: 13px; letter-spacing: 1px; }
+
+  /* Мега-меню сворачивается в бургер: пункты становятся списком-гармошкой
+     во всю ширину, панели раскрываются на месте, а не всплывают. */
+  .topbar-burger { display: block; }
+  .nav-menu {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 8px 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.1);
+  }
+  .topbar.open .nav-menu { display: flex; }
+  .nav-trigger { width: 100%; justify-content: space-between; font-size: 16px; }
+  .nav-item:not(.open) .mega { display: none; }
+  /* Панель раскрывается на месте, а не всплывает поверх страницы */
+  .mega {
+    position: static;
+    transform: none;
+    visibility: visible;
+    opacity: 1;
+    padding: 0 0 8px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  .mega-inner { display: block; padding: 0; }
+  .mega-col + .mega-col { margin-top: 14px; }
+  .mega-title { margin-bottom: 8px; }
+  /* Заголовок первой колонки повторяет название группы, которое уже
+     написано на кнопке-гармошке — на узком экране это лишняя строка */
+  .mega-col.large .mega-title { display: none; }
+  .mega-col.large .mega-item { font-size: 19px; }   /* на телефоне 25px слишком */
+
+  /* Три карточки контактов — в колонку */
+  .contact-card { padding: 24px 20px 22px; }
+  .contact-card .btn { width: 100%; align-self: stretch; }
+
+  /* Герой в одну колонку: сначала текст, знак под ним и поменьше */
+  .hero-home { grid-template-columns: 1fr; gap: 26px; padding: 36px 14px 34px; }
+  .hero-visual { min-height: 200px; order: 2; }
+  .hero-visual svg { width: min(200px, 56%); }
+  .hero-actions { margin-top: 24px; gap: 10px; }
+  .hero-actions .btn { width: 100%; padding: 14px 22px; }
+
+  .brand { padding: 44px 20px 26px; }
+  .brand .brand-tagline { font-size: 13px; letter-spacing: 2px; }
+
+  .nav { padding: 10px 52px; }
+  /* nowrap — иначе «Карта зала» ломается на две строки и полоса скачет */
+  .nav a { margin: 0 5px; font-size: 13px; white-space: nowrap; }
+
+  .page { padding: 20px 14px 46px; }
+  .container { padding: 16px 14px 46px; }
+  .venues-grid { padding: 0 14px 18px; gap: 16px; grid-template-columns: 1fr; }
+  .promo-wrap { padding: 0 14px 46px; }
+  .section-head { padding: 0 14px; }
+
+  /* Подвал: колонки в одну, копирайт и название друг под другом */
+  .site-footer { padding: 32px 14px 24px; }
+  .footer-cols { gap: 22px; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; margin-top: 26px; }
+  .reco-wrap, .filters { padding: 0 14px; }
+
+  .menu-grid { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Фильтры не переносятся, а прокручиваются вбок одной строкой */
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+
+  .dish-img.in-modal { height: 150px; }
+  .dish-img.in-modal .dish-emoji { font-size: 52px; }
+  .modal-body { padding: 18px; }
+  .overlay { padding: 12px; align-items: flex-end; }  /* модалка снизу — ближе к пальцу */
+  .modal { max-height: 92vh; }
+
+  /* 16px — минимум, иначе iPhone при клике в поле увеличивает всю страницу */
+  .field input, .field select { font-size: 16px; }
+  .row2 { grid-template-columns: 1fr; gap: 0; }
+
+  .legend { gap: 12px; font-size: 13px; }
+  .hall-stats .stat { padding: 8px 11px; font-size: 12px; }
+
+  /* Баннеры чуть уже — так следующий выглядывает за краем
+     и сразу видно, что ленту можно листать вбок */
+  .promo-card { width: 200px; min-height: 250px; padding: 15px; }
+  .promo-emoji { font-size: 86px; }
+  .promo-title { font-size: 15px; }
+  .block-title { font-size: 16px; letter-spacing: 2px; margin: 26px 0 14px; }
+}
+
+/* --- Если в системе выключены анимации — уважаем настройку --- */
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg { animation: none; }
+  .reco-track { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+
+  /* Появление при прокрутке отключаем совсем: без плавности оно
+     превратилось бы в резкие скачки прозрачности. */
+  .reveal { opacity: 1; translate: 0 0; }
+
+  /* Каскад в герое тоже выключаем — показываем сразу готовый экран */
+  .hero-title, .hero-lead, .hero-actions, .hero-visual { animation: none; }
+}
